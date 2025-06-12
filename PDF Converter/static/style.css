@@ -116,3 +116,62 @@ footer {
     border: 1px solid #ccc;
     border-radius: 6px;
 }
+
+#thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.thumb-wrapper {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    cursor: move;
+}
+
+.thumb-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.remove-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff4d4d;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 14px;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+#thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.thumb-wrapper {
+    cursor: grab;
+    transition: transform 0.15s ease;
+    user-select: none;
+    /* other styles */
+}
+
+.sortable-ghost {
+    opacity: 0.6;
+    cursor: grabbing;
+    /* optionally add shadow or border */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}

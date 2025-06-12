@@ -4,124 +4,184 @@ document.addEventListener("DOMContentLoaded", () => {
     const fileSelect = document.getElementById("fileSelect");
     const uploadForm = document.getElementById("uploadForm");
     const spinner = document.getElementById("spinner");
+    const thumbs = document.getElementById("thumbs");
+    const fileCount = document.getElementById("file-count");
 
 
-    function updatePreview(files) {
-        const fileCount = document.getElementById("file-count");
-        const thumbs = document.getElementById("thumbs");
+    // After your DOMContentLoaded or equivalent init:
+
+    // const thumbs = document.getElementById("thumbs");
+
+    // Initialize Sortable
+    const sortable = new Sortable(thumbs, {
+        animation: 150, // Smooth animation duration in ms
+        ghostClass: "sortable-ghost", // class for the dragged item
+
+        onEnd: function (evt) {
+            const movedItem = filesArray.splice(evt.oldIndex, 1)[0];
+            filesArray.splice(evt.newIndex, 0, movedItem);
+
+            // Just update data-index attributes on current DOM elements
+            const wrappers = thumbs.querySelectorAll(".thumb-wrapper");
+            wrappers.forEach((el, i) => {
+                el.setAttribute("data-index", i);
+            });
+        }
+
+    });
+
+
+
+    let filesArray = [];
+    let dragSrcEl = null;
+
+    // Prevent default drag behaviors on document
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+        document.body.addEventListener(eventName, e => e.preventDefault());
+    });
+
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        this.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        return false;
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        if (dragSrcEl !== this) {
+            const fromIndex = Number(dragSrcEl.getAttribute("data-index"));
+            const toIndex = Number(this.getAttribute("data-index"));
+
+            // Move dragged file in array
+            const movedFile = filesArray.splice(fromIndex, 1)[0];
+            filesArray.splice(toIndex, 0, movedFile);
+
+            // Remove dragging class from old element
+            dragSrcEl.classList.remove("dragging");
+
+            dragSrcEl = null;  // Clear reference to prevent stale use
+
+            renderPreviews();  // Re-render thumbnails to update UI
+        }
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove("dragging");
+    }
+
+    function renderPreviews() {
         thumbs.innerHTML = "";
-
-        if (!files.length) {
+        if (filesArray.length === 0) {
             fileCount.textContent = "No files selected";
             return;
         }
+        fileCount.textContent = `${filesArray.length} image(s) selected`;
 
-        if (files.length > 20) {
-            fileCount.textContent = "⚠️ Too many files! Max: 20";
-            return;
-        }
+        filesArray.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const wrapper = document.createElement("div");
+                wrapper.classList.add("thumb-wrapper");
+                wrapper.setAttribute("data-index", index);
 
-        fileCount.textContent = `${files.length} image(s) selected`;
+                const img = document.createElement("img");
+                img.src = e.target.result;
 
-        [...files].forEach(file => {
-            if (file.type.startsWith("image/")) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const img = document.createElement("img");
-                    img.src = e.target.result;
-                    thumbs.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            }
+                const removeBtn = document.createElement("div");
+                removeBtn.classList.add("remove-btn");
+                removeBtn.textContent = "×";
+                removeBtn.title = "Remove image";
+                removeBtn.addEventListener("click", () => {
+                    filesArray.splice(index, 1);
+                    renderPreviews();
+                });
+
+                wrapper.appendChild(img);
+                wrapper.appendChild(removeBtn);
+                thumbs.appendChild(wrapper);
+            };
+            reader.readAsDataURL(file);
         });
     }
 
 
-    // ✅ Show previews when files are selected manually
-    fileInput.addEventListener("change", () => {
-        updatePreview(fileInput.files);
-    });
-
-    // ✅ Drag events
-    ["dragenter", "dragover"].forEach(event =>
-        dropArea.addEventListener(event, e => {
-            e.preventDefault();
-            dropArea.classList.add("hover");
-        })
-    );
-
-    ["dragleave", "drop"].forEach(event =>
-        dropArea.addEventListener(event, e => {
-            e.preventDefault();
-            dropArea.classList.remove("hover");
-        })
-    );
-
-    // ✅ Handle drop
-    dropArea.addEventListener("drop", e => {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-
-        if (files.length > 20) {
-            alert("Please upload 20 or fewer images.");
-            return;
-        }
-
-        const dataTransfer = new DataTransfer();
-        for (let i = 0; i < files.length; i++) {
-            dataTransfer.items.add(files[i]);
-        }
-
-        fileInput.files = dataTransfer.files;
-        updatePreview(fileInput.files);
-    });
-
-    // ✅ Click to browse
-    fileSelect.addEventListener("click", () => fileInput.click());
-
-    // ✅ Form submission with spinner and fetch
-    uploadForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const files = fileInput.files;
-
-        if (!files.length) {
-            alert("Please select some images.");
-            return;
-        }
-
-        if (files.length > 20) {
+    function addFiles(newFiles) {
+        if (filesArray.length + newFiles.length > 20) {
             alert("Maximum 20 images allowed.");
             return;
         }
+        filesArray = filesArray.concat(Array.from(newFiles));
+        renderPreviews();
+    }
 
+    fileInput.addEventListener("change", () => {
+        addFiles(fileInput.files);
+        fileInput.value = "";
+    });
+
+    fileSelect.addEventListener("click", () => fileInput.click());
+
+    ["dragenter", "dragover"].forEach(eventName => {
+        dropArea.addEventListener(eventName, e => {
+            e.preventDefault();
+            dropArea.classList.add("hover");
+        });
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+        dropArea.addEventListener(eventName, e => {
+            e.preventDefault();
+            dropArea.classList.remove("hover");
+        });
+    });
+
+    dropArea.addEventListener("drop", e => {
+        addFiles(e.dataTransfer.files);
+    });
+
+    uploadForm.addEventListener("submit", async e => {
+        e.preventDefault();
+        if (filesArray.length === 0) {
+            alert("Please select some images first.");
+            return;
+        }
         spinner.classList.remove("hidden");
 
         const formData = new FormData();
-        for (let file of files) {
-            formData.append("images", file);
-        }
+        filesArray.forEach(file => formData.append("images", file));
 
         try {
-            const response = await fetch("/upload", {
+            const res = await fetch("/upload", {
                 method: "POST",
                 body: formData
             });
+            if (!res.ok) throw new Error("Upload failed");
 
-            if (!response.ok) throw new Error("Upload failed");
-
-            const blob = await response.blob();
+            const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "converted.pdf";
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "converted.pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
             window.URL.revokeObjectURL(url);
+
+            filesArray = [];
+            renderPreviews();
         } catch (err) {
-            alert("Something went wrong.");
+            alert("Error uploading images.");
+            console.error(err);
         } finally {
             spinner.classList.add("hidden");
         }
     });
+
+    renderPreviews();
 });
