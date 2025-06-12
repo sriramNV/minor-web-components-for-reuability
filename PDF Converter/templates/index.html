@@ -3,39 +3,40 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Image to PDF</title>
+    <title>Image to PDF Converter</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
     <div class="container">
-        <h1>Upload Images to Convert to PDF</h1>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="images" accept="image/*" multiple required>
-            <button type="submit">Convert</button>
+        <h1>🖼️ Image to PDF Converter</h1>
+        <p>Drag and drop images below or use the browse button.</p>
+
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+            <div id="drop-area">
+                <p>Drop images here</p>
+                <input type="file" id="fileElem" name="images" accept="image/*" multiple required hidden>
+                <button type="button" id="fileSelect">Browse Files</button>
+            </div>
+            <div id="preview-box">
+                <p id="file-count">No files selected</p>
+                <div id="thumbs"></div>
+            </div>
+
+            <button type="submit" id="submitBtn">Convert</button>
         </form>
-        <div id="countdown" style="display: none;">
-            <p>Your file will be deleted in <span id="timer">300</span> seconds.</p>
+
+        <div id="spinner" class="hidden">
+            <div class="loader"></div>
+            <p>Converting to PDF...</p>
         </div>
 
+        <footer>
+            <p>Files are never stored. PDF is generated in memory.</p>
+        </footer>
     </div>
-    <script>
-        const form = document.querySelector('form');
-        form.addEventListener('submit', () => {
-            document.getElementById('countdown').style.display = 'block';
-            let timeLeft = 300;
-            const timer = document.getElementById('timer');
-            const interval = setInterval(() => {
-                timeLeft--;
-                timer.textContent = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(interval);
-                    timer.textContent = "expired";
-                }
-            }, 1000);
-        });
-    </script>
 
+    <script src="/static/script.js"></script>
 </body>
 
 </html>

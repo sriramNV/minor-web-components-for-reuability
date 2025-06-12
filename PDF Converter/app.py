@@ -6,6 +6,7 @@ import shutil
 import threading
 from datetime import datetime, timedelta
 import time
+from io import BytesIO
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -38,25 +39,42 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload():
     files = request.files.getlist('images')
-    temp_id = str(uuid.uuid4())
-    temp_folder = os.path.join(UPLOAD_FOLDER, temp_id)
-    os.makedirs(temp_folder, exist_ok=True)
-
     image_list = []
+
+    # Pillow version compatibility
+    try:
+        resample_filter = Image.Resampling.LANCZOS
+    except AttributeError:
+        resample_filter = Image.ANTIALIAS
+
     for file in files:
-        filepath = os.path.join(temp_folder, file.filename)
-        file.save(filepath)
-        img = Image.open(filepath)
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        image_list.append(img)
+        try:
+            img = Image.open(file.stream)
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+
+            # Resize if too large
+            max_width = 1500
+            if img.width > max_width:
+                ratio = max_width / float(img.width)
+                height = int(img.height * ratio)
+                img = img.resize((max_width, height), resample_filter)
+
+            image_list.append(img)
+
+        except Exception as e:
+            print(f"Error reading image: {e}")
+            continue
 
     if image_list:
-        pdf_path = os.path.join(temp_folder, 'output.pdf')
-        image_list[0].save(pdf_path, save_all=True, append_images=image_list[1:])
-        return send_file(pdf_path, as_attachment=True)
+        pdf_bytes = BytesIO()
+        image_list[0].save(pdf_bytes, format='PDF', save_all=True, append_images=image_list[1:])
+        pdf_bytes.seek(0)
+        return send_file(pdf_bytes, mimetype='application/pdf',
+                         download_name='converted.pdf', as_attachment=True)
 
     return "No valid images uploaded."
+
 
 # Port for Glitch
 if __name__ == '__main__':
