@@ -14,7 +14,29 @@
             <input type="file" name="images" multiple accept="image/*">
             <button type="submit">Convert to PDF</button>
         </form>
+        <div id="countdown" style="display: none;">
+            <p>Your file will be deleted in <span id="timer">300</span> seconds.</p>
+        </div>
     </div>
+
+    <script>
+        const form = document.querySelector('form');
+        form.addEventListener('submit', () => {
+            document.getElementById('countdown').style.display = 'block';
+            let timeLeft = 300;
+            const timer = document.getElementById('timer');
+            const interval = setInterval(() => {
+                timeLeft--;
+                timer.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    timer.textContent = "expired";
+                }
+            }, 1000);
+        });
+    </script>
+
+
 </body>
 
 </html>
