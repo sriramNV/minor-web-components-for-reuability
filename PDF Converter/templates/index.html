@@ -3,22 +3,22 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Image to PDF Converter</title>
+    <title>Image to PDF</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
     <div class="container">
-        <h1>Convert Images to PDF</h1>
+        <h1>Upload Images to Convert to PDF</h1>
         <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="images" multiple accept="image/*">
-            <button type="submit">Convert to PDF</button>
+            <input type="file" name="images" accept="image/*" multiple required>
+            <button type="submit">Convert</button>
         </form>
         <div id="countdown" style="display: none;">
             <p>Your file will be deleted in <span id="timer">300</span> seconds.</p>
         </div>
-    </div>
 
+    </div>
     <script>
         const form = document.querySelector('form');
         form.addEventListener('submit', () => {
@@ -35,7 +35,6 @@
             }, 1000);
         });
     </script>
-
 
 </body>
 

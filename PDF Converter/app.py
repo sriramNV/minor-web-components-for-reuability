@@ -4,32 +4,32 @@ import os
 import uuid
 import shutil
 import threading
+from datetime import datetime, timedelta
+import time
 
 app = Flask(__name__)
-
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Background cleanup thread
-def start_background_cleaner(folder, max_age_minutes=10, interval_seconds=300):
+# Cleanup thread (runs every 5 mins, deletes folders older than 10 mins)
+def start_background_cleaner():
     def cleaner():
-        import time
-        from datetime import datetime, timedelta
         while True:
             now = datetime.now()
-            for subfolder in os.listdir(folder):
-                path = os.path.join(folder, subfolder)
+            for folder in os.listdir(UPLOAD_FOLDER):
+                path = os.path.join(UPLOAD_FOLDER, folder)
                 if os.path.isdir(path):
-                    creation_time = datetime.fromtimestamp(os.path.getctime(path))
-                    if now - creation_time > timedelta(minutes=max_age_minutes):
+                    created = datetime.fromtimestamp(os.path.getctime(path))
+                    if now - created > timedelta(minutes=10):
                         try:
                             shutil.rmtree(path)
+                            print(f"Deleted {path}")
                         except Exception as e:
-                            print(f"Error deleting {path}: {e}")
-            time.sleep(interval_seconds)
+                            print(f"Failed to delete {path}: {e}")
+            time.sleep(300)
     threading.Thread(target=cleaner, daemon=True).start()
 
-start_background_cleaner(UPLOAD_FOLDER)
+start_background_cleaner()
 
 @app.route('/')
 def index():
@@ -38,10 +38,11 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload():
     files = request.files.getlist('images')
-    image_list = []
-    temp_folder = os.path.join(UPLOAD_FOLDER, str(uuid.uuid4()))
+    temp_id = str(uuid.uuid4())
+    temp_folder = os.path.join(UPLOAD_FOLDER, temp_id)
     os.makedirs(temp_folder, exist_ok=True)
 
+    image_list = []
     for file in files:
         filepath = os.path.join(temp_folder, file.filename)
         file.save(filepath)
@@ -57,6 +58,7 @@ def upload():
 
     return "No valid images uploaded."
 
-# ✅ Local development entry point only
+# Port for Glitch
 if __name__ == '__main__':
-    app.run(debug=True)  # ONLY for local testing
+    port = int(os.environ.get("PORT", 3000))
+    app.run(host='0.0.0.0', port=port, debug=True)
