@@ -14,9 +14,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Cleanup thread (runs every 5 mins, deletes folders older than 10 mins)
 def start_background_cleaner():
-    def cleaner():
-        while True:
-            now = datetime.now()
+   def cleaner():
+        while True:            now = datetime.now()
             for folder in os.listdir(UPLOAD_FOLDER):
                 path = os.path.join(UPLOAD_FOLDER, folder)
                 if os.path.isdir(path):
