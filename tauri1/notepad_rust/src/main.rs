@@ -69,6 +69,8 @@ struct NotepadApp {
     find_query: String,
     replace_query: String,
     show_find: bool,
+    editing_tab_index: Option<usize>,
+    rename_buffer: String,
 }
 
 impl Default for NotepadApp {
@@ -83,6 +85,8 @@ impl Default for NotepadApp {
             find_query: String::new(),
             replace_query: String::new(),
             show_find: false,
+            editing_tab_index: None,
+            rename_buffer: String::new(),
         }
     }
 }
@@ -201,33 +205,55 @@ impl App for NotepadApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
+               
                 let mut close_tab: Option<usize> = None;
-                ui.horizontal(|ui| {
-                    for (i, buf) in self.buffers.iter().enumerate() {
-                        let is_selected = i == self.current_tab;
 
-                        ui.group(|ui| {
-                            ui.horizontal(|ui| {
-                                let tab_label = if is_selected {
-                                    format!("[{}]", buf.name)
+                for i in 0..self.buffers.len() {
+                    let is_selected = i == self.current_tab;
+                    let is_renaming = self.editing_tab_index == Some(i);
+
+                    ui.group(|ui| {
+                        ui.horizontal(|ui| {
+                            if is_renaming {
+                                let response = ui.text_edit_singleline(&mut self.rename_buffer);
+                                if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                                    if let Some(tab) = self.buffers.get_mut(i) {
+                                        tab.name = self.rename_buffer.clone();
+                                    }
+                                    self.editing_tab_index = None;
+                                }
+                            } else {
+                                let tab_name = &self.buffers[i].name;
+                                let label = if is_selected {
+                                    format!("[{}]", tab_name)
                                 } else {
-                                    buf.name.clone()
+                                    tab_name.clone()
                                 };
-                                if ui.selectable_label(is_selected, tab_label).clicked() {
+
+                                let response = ui.selectable_label(is_selected, label);
+                                if response.clicked() {
                                     self.current_tab = i;
                                 }
-                                if ui.button("×").clicked() {
-                                    close_tab = Some(i);
+                                if response.double_clicked() {
+                                    self.rename_buffer = tab_name.clone();
+                                    self.editing_tab_index = Some(i);
                                 }
-                            });
+                            }
+
+                            if ui.button("×").clicked() {
+                                close_tab = Some(i);
+                            }
                         });
-                    }
-                });
+                    });
+                }
 
                 if let Some(i) = close_tab {
                     self.buffers.remove(i);
                     if self.current_tab >= self.buffers.len() {
                         self.current_tab = self.buffers.len().saturating_sub(1);
+                    }
+                    if self.editing_tab_index == Some(i) {
+                        self.editing_tab_index = None;
                     }
                 }
             });
