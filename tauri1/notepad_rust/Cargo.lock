@@ -1829,6 +1829,7 @@ name = "notepad_rust"
 version = "0.1.0"
 dependencies = [
  "eframe",
+ "egui",
  "rfd",
 ]
 
