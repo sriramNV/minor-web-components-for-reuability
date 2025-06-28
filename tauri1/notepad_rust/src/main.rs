@@ -1,5 +1,5 @@
 // A complete Rust Notepad with:
-// - Tabs (add/close)
+// - Tabs (add/close/rename)
 // - Undo/Redo
 // - Find/Replace
 // - Auto-save
@@ -205,7 +205,6 @@ impl App for NotepadApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
-               
                 let mut close_tab: Option<usize> = None;
 
                 for i in 0..self.buffers.len() {
@@ -219,6 +218,10 @@ impl App for NotepadApp {
                                 if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                                     if let Some(tab) = self.buffers.get_mut(i) {
                                         tab.name = self.rename_buffer.clone();
+                                        if let Some(path) = &tab.file_path {
+                                            let _ = fs::write(path, &tab.content);
+                                            self.status = format!("Renamed and saved: {}", path);
+                                        }
                                     }
                                     self.editing_tab_index = None;
                                 }
