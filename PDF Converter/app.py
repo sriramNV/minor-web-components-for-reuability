@@ -15,7 +15,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # Cleanup thread (runs every 5 mins, deletes folders older than 10 mins)
 def start_background_cleaner():
    def cleaner():
-        while True:            now = datetime.now()
+        while True:            
+            now = datetime.now()
             for folder in os.listdir(UPLOAD_FOLDER):
                 path = os.path.join(UPLOAD_FOLDER, folder)
                 if os.path.isdir(path):
@@ -27,7 +28,7 @@ def start_background_cleaner():
                         except Exception as e:
                             print(f"Failed to delete {path}: {e}")
             time.sleep(300)
-    threading.Thread(target=cleaner, daemon=True).start()
+        threading.Thread(target=cleaner, daemon=True).start()
 
 start_background_cleaner()
 
